@@ -25,6 +25,7 @@ server, which will be transpiled into polymer ready browser custom elements.
     require 'colors'
 
     args.root_directory = fs.realpathSync args['<root_directory>'] or '.'
+    port = process.env['PORT'] or 10000
 
 
     if cluster.isMaster
@@ -40,7 +41,6 @@ server, which will be transpiled into polymer ready browser custom elements.
         cluster.fork()
         ct++
     else
-      port = process.env['PORT'] or 10000
       app = express()
       app.enable 'etag'
       app.use require('./polymer-middleware.litcoffee')(args, args.root_directory)
