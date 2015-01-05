@@ -21,21 +21,30 @@ server, which will be transpiled into polymer ready browser custom elements.
     fs = require 'fs'
     express = require 'express'
     livereload = require 'livereload'
-    wrench = require 'wrench'
+    cluster = require 'cluster'
     require 'colors'
 
     args.root_directory = fs.realpathSync args['<root_directory>'] or '.'
 
-    port = process.env['PORT'] or 10000
-    console.log "Polymer Build Server".blue, args.root_directory
-    app = express()
-    app.use require('./polymer-middleware.litcoffee')(args, args.root_directory)
-    app.use require('./style-middleware.litcoffee')(args, args.root_directory)
-    app.use require('./script-middleware.litcoffee')(args, args.root_directory)
-    app.use express.static(args.root_directory)
-    app.listen port
-    console.log "Live Reload".blue, args.root_directory
-    reload = livereload.createServer()
-    reload.watch args.root_directory
-    if fs.existsSync path.join(args.root_directory, 'demo.html')
-      console.log "Test Page".blue, "http://localhost:#{port}/demo.html"
+
+    if cluster.isMaster
+      console.log "Polymer Build Server".blue, args.root_directory
+      if fs.existsSync path.join(args.root_directory, 'demo.html')
+        console.log "Test Page".blue, "http://localhost:#{port}/demo.html"
+      console.log "Live Reload".blue, args.root_directory
+      reload = livereload.createServer()
+      reload.watch args.root_directory
+      cpuCount = require('os').cpus().length * 2
+      ct = 0
+      while ct < cpuCount
+        cluster.fork()
+        ct++
+    else
+      port = process.env['PORT'] or 10000
+      app = express()
+      app.enable 'etag'
+      app.use require('./polymer-middleware.litcoffee')(args, args.root_directory)
+      app.use require('./style-middleware.litcoffee')(args, args.root_directory)
+      app.use require('./script-middleware.litcoffee')(args, args.root_directory)
+      app.use express.static(args.root_directory)
+      app.listen port

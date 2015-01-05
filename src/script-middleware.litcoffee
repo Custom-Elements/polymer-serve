@@ -11,7 +11,9 @@ Express middleware to build and serve on demand.
         filename = path.join directory or process.cwd(), parseurl(req).pathname
         if path.extname(filename) is '.litcoffee' or path.extname(filename) is '.coffee'
           console.log "scripting with browserify", filename.blue
-          b = browserify()
+          b = browserify
+            debug: true
+            fullPaths: true
           b.add filename
           b.transform require('coffeeify')
           b.bundle (err, compiled) ->
