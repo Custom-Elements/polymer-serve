@@ -46,5 +46,6 @@ server, which will be transpiled into polymer ready browser custom elements.
       app.use require('./polymer-middleware.litcoffee')(args, args.root_directory)
       app.use require('./style-middleware.litcoffee')(args, args.root_directory)
       app.use require('./script-middleware.litcoffee')(args, args.root_directory)
+      app.use require('./markdown-middleware.litcoffee')(args, args.root_directory)
       app.use express.static(args.root_directory)
       app.listen port
