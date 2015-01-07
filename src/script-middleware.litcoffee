@@ -4,6 +4,7 @@ Express middleware to build and serve on demand.
     path = require 'path'
     browserify = require 'browserify'
     through = require 'through'
+    uglify = require 'uglifyjs'
     fs = require 'fs'
 
     requireString = (extension) ->
@@ -43,11 +44,11 @@ Express middleware to build and serve on demand.
         if path.extname(filename) is '.litcoffee' or path.extname(filename) is '.coffee'
           console.log "scripting with browserify", filename.blue
           b = browserify
-            debug: true
+            debug: true unless args.cache
             fullPaths: true
           b.add filename
-          b.transform require('coffeeify')
           b.transform requireString '.svg'
+          b.transform require 'coffeeify'
           b.bundle (err, compiled) ->
             if err
               console.error err.toString().red
@@ -57,6 +58,8 @@ Express middleware to build and serve on demand.
                 .end()
             else
               if args.cache
+                compiled = uglify.minify compiled.toString(), fromString: true
+                compiled = compiled.code
                 args.cache[filename] = compiled
               res.type 'application/javascript'
               res.statusCode = 200

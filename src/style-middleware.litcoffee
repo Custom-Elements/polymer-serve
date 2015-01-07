@@ -15,7 +15,7 @@ Express middleware to build and serve on demand.
           return next()
         filename = path.join directory or process.cwd(), parseurl(req).pathname
 
-        
+
         if args.cache?[filename]
           res.type 'text/css'
           res.statusCode = 200
@@ -26,6 +26,7 @@ Express middleware to build and serve on demand.
           console.log "styling ", filename.blue
           cssOptions =
             relativeUrls: true
+            compress: true
             filename: filename
             paths: [
               path.dirname(filename)
