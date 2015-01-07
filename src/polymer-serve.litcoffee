@@ -20,6 +20,7 @@ server, which will be transpiled into polymer ready browser custom elements.
     path = require 'path'
     fs = require 'fs'
     express = require 'express'
+    livereload = require 'livereload'
     cluster = require 'cluster'
     require 'colors'
 
@@ -31,6 +32,9 @@ server, which will be transpiled into polymer ready browser custom elements.
       console.log "Polymer Build Server".blue, args.root_directory
       if fs.existsSync path.join(args.root_directory, 'demo.html')
         console.log "Test Page".blue, "http://localhost:#{port}/demo.html"
+      console.log "Live Reload".blue, args.root_directory
+      reload = livereload.createServer()
+      reload.watch args.root_directory
       cpuCount = require('os').cpus().length * 2
       ct = 0
       while ct < cpuCount
