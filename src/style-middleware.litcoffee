@@ -14,6 +14,14 @@ Express middleware to build and serve on demand.
         if 'GET' isnt req.method and 'HEAD' isnt req.method
           return next()
         filename = path.join directory or process.cwd(), parseurl(req).pathname
+
+        
+        if args.cache?[filename]
+          res.type 'text/css'
+          res.statusCode = 200
+          res.end args.cache[filename]
+          return
+
         if path.extname(filename) is '.less'
           console.log "styling ", filename.blue
           cssOptions =
@@ -29,6 +37,8 @@ Express middleware to build and serve on demand.
               less.renderAsync rawLess, cssOptions
             )
             .then( (compiled) ->
+              if args.cache
+                args.cache[filename] = compiled.css
               res.type 'text/css'
               res.statusCode = 200
               res.end compiled.css

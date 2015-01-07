@@ -20,21 +20,25 @@ server, which will be transpiled into polymer ready browser custom elements.
     path = require 'path'
     fs = require 'fs'
     express = require 'express'
-    livereload = require 'livereload'
     cluster = require 'cluster'
     require 'colors'
 
     args.root_directory = fs.realpathSync args['<root_directory>'] or '.'
+
+Set up a cache holding object if requested, the middlewares will look for this
+and just use it rather than running.
+
+    if args['--cache']
+      console.log "enabling production cache".green
+      args.cache = {}
+
     port = process.env['PORT'] or 10000
 
+Using cluster to get a faster build -- particularly on the initial request.
 
-    if cluster.isMaster
-      console.log "Polymer Build Server".blue, args.root_directory
+    if cluster.isMaster and not args.cache
       if fs.existsSync path.join(args.root_directory, 'demo.html')
         console.log "Test Page".blue, "http://localhost:#{port}/demo.html"
-      console.log "Live Reload".blue, args.root_directory
-      reload = livereload.createServer()
-      reload.watch args.root_directory
       cpuCount = require('os').cpus().length * 2
       ct = 0
       while ct < cpuCount

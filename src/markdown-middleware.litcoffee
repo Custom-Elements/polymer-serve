@@ -20,12 +20,21 @@ Express middleware to build and serve on demand.
         if 'GET' isnt req.method and 'HEAD' isnt req.method
           return next()
         filename = path.join directory or process.cwd(), parseurl(req).pathname
+
+        if args.cache?[filename]
+          res.type 'text/html'
+          res.statusCode = 200
+          res.end args.cache[filename]
+          return
+
         if path.extname(filename) is '.md'
           console.log "marking down", filename.blue
           fs.readFileAsync(filename, 'utf-8')
             .then( (markdown) ->
               content = marked markdown, renderer: renderer
-              res.type 'text/plain'
+              if args.cache
+                args.cache[filename] = content
+              res.type 'text/html'
               res.statusCode = 200
               res.end content
             )

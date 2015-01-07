@@ -33,6 +33,13 @@ Express middleware to build and serve on demand.
         if 'GET' isnt req.method and 'HEAD' isnt req.method
           return next()
         filename = path.join directory or process.cwd(), parseurl(req).pathname
+
+        if args.cache?[filename]
+          res.type 'application/javascript'
+          res.statusCode = 200
+          res.end args.cache[filename]
+          return
+
         if path.extname(filename) is '.litcoffee' or path.extname(filename) is '.coffee'
           console.log "scripting with browserify", filename.blue
           b = browserify
@@ -49,6 +56,8 @@ Express middleware to build and serve on demand.
                 .send err.toString(), 400
                 .end()
             else
+              if args.cache
+                args.cache[filename] = compiled
               res.type 'application/javascript'
               res.statusCode = 200
               res.end compiled
