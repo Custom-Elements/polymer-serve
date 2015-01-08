@@ -35,13 +35,12 @@ Express middleware to build and serve on demand.
           return next()
         filename = path.join directory or process.cwd(), parseurl(req).pathname
 
-        if args.cache?[filename]
-          res.type 'application/javascript'
-          res.statusCode = 200
-          res.end args.cache[filename]
-          return
-
         if path.extname(filename) is '.litcoffee' or path.extname(filename) is '.coffee'
+          if args.cache?[filename]
+            res.type 'application/javascript'
+            res.statusCode = 200
+            res.end args.cache[filename]
+            return
           console.log "scripting with browserify", filename.blue
           b = browserify
             debug: true unless args.cache

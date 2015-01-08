@@ -15,14 +15,12 @@ Express middleware to build and serve on demand.
           return next()
         filename = path.join directory or process.cwd(), parseurl(req).pathname
 
-
-        if args.cache?[filename]
-          res.type 'text/css'
-          res.statusCode = 200
-          res.end args.cache[filename]
-          return
-
         if path.extname(filename) is '.less'
+          if args.cache?[filename]
+            res.type 'text/css'
+            res.statusCode = 200
+            res.end args.cache[filename]
+            return
           console.log "styling ", filename.blue
           cssOptions =
             relativeUrls: true
