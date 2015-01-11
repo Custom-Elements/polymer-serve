@@ -47,9 +47,12 @@ Using cluster to get a faster build -- particularly on the initial request.
     else
       app = express()
       app.enable 'etag'
+      app.use require('cors')()
+
       app.use require('./polymer-middleware.litcoffee')(args, args.root_directory)
       app.use require('./style-middleware.litcoffee')(args, args.root_directory)
       app.use require('./script-middleware.litcoffee')(args, args.root_directory)
       app.use require('./markdown-middleware.litcoffee')(args, args.root_directory)
+
       app.use express.static(args.root_directory)
       app.listen port
