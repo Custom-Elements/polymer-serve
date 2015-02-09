@@ -4,7 +4,7 @@ Express middleware to build and serve on demand.
     path = require 'path'
     browserify = require 'browserify'
     through = require 'through'
-    uglify = require 'uglifyjs'
+    uglify = require 'uglify-js'
     fs = require 'fs'
 
     requireString = (extension) ->

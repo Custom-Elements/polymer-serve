@@ -37,7 +37,7 @@
     "marked": "^0.3.2",
     "parseurl": "^1.0.1",
     "through": "^2.3.6",
-    "uglifyjs": "^2.3.6",
+    "uglify-js": "^2.3.6",
     "cors": "^2.5.2"
   }
 }
