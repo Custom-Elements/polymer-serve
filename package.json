@@ -1,6 +1,6 @@
 {
   "name": "polymer-serve",
-  "version": "0.0.28",
+  "version": "0.0.30",
   "description": "Build tools to make polymer element creation easy!",
   "default": "index.js",
   "bin": {
