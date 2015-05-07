@@ -45,7 +45,7 @@ Using cluster to get a faster build -- particularly on the initial request.
         cluster.fork()
         ct++
     else
-      app = module.exports = express()
+      app = express()
       app.enable 'etag'
       app.use require('cors')()
 
