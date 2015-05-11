@@ -18,8 +18,8 @@ Express middleware to build and serve on demand.
         if path.extname(filename) is '.less'
           if args.cache?[filename]
             res.type 'text/css'
-            res.statusCode = 200
-            res.end args.cache[filename]
+            res.setHeader 'Last-Modified', args.lastModified
+            res.send args.cache[filename]
             return
           console.log "styling ", filename.blue
           cssOptions =
@@ -38,9 +38,9 @@ Express middleware to build and serve on demand.
             .then( (compiled) ->
               if args.cache
                 args.cache[filename] = compiled.css
+                res.setHeader 'Last-Modified', args.lastModified
               res.type 'text/css'
-              res.statusCode = 200
-              res.end compiled.css
+              res.send compiled.css
             )
             .error( (e) ->
               res.statusCode = 500

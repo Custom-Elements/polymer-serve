@@ -38,8 +38,8 @@ Express middleware to build and serve on demand.
         if path.extname(filename) is '.litcoffee' or path.extname(filename) is '.coffee'
           if args.cache?[filename]
             res.type 'application/javascript'
-            res.statusCode = 200
-            res.end args.cache[filename]
+            res.setHeader 'Last-Modified', args.lastModified
+            res.send args.cache[filename]
             return
           console.log "scripting with browserify", filename.blue
           b = browserify
@@ -60,8 +60,8 @@ Express middleware to build and serve on demand.
                 compiled = uglify.minify compiled.toString(), fromString: true
                 compiled = compiled.code
                 args.cache[filename] = compiled
+                res.setHeader 'Last-Modified', args.lastModified
               res.type 'application/javascript'
-              res.statusCode = 200
-              res.end compiled
+              res.send compiled
         else
           next()
