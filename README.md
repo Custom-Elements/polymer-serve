@@ -5,6 +5,6 @@ Usage:
 
   --help             Show the help
   --cache            Only build just once, then save the results.
-  --precompile       Precompile all resources, implies --cache
+  --precache         Precompile and cache all resources before starting, implies --cache
   --quiet            SSSHHH! Less logging.
 ```
