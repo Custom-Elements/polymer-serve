@@ -1,4 +1,4 @@
 docs:
 	echo '```' > README.md
-	./bin/polymer-build --help >> README.md
+	./bin/polymer-serve --help >> README.md
 	echo '```' >> README.md
