@@ -30,6 +30,7 @@ and just use it rather than running.
 
     if args['--cache']
       console.log "enabling production cache".green
+      args.lastModified = new Date().toUTCString()
       args.cache = {}
 
     port = process.env['PORT'] or 10000
@@ -46,7 +47,7 @@ Using cluster to get a faster build -- particularly on the initial request.
         ct++
     else
       app = express()
-      app.enable 'etag'
+      app.set 'etag', true
       app.use require('cors')()
 
       app.use require('./polymer-middleware.litcoffee')(args, args.root_directory)

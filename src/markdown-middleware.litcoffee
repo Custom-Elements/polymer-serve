@@ -23,8 +23,8 @@ Express middleware to build and serve on demand.
 
         if args.cache?[filename]
           res.type 'text/html'
-          res.statusCode = 200
-          res.end args.cache[filename]
+          res.setHeader 'Last-Modified', args.lastModified
+          res.send args.cache[filename]
           return
 
         if path.extname(filename) is '.md'
@@ -34,9 +34,9 @@ Express middleware to build and serve on demand.
               content = marked markdown, renderer: renderer
               if args.cache
                 args.cache[filename] = content
+                res.setHeader 'Last-Modified', args.lastModified
               res.type 'text/html'
-              res.statusCode = 200
-              res.end content
+              res.send content
             )
             .error( (e) ->
               res.statusCode = 500
