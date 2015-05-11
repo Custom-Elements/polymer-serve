@@ -41,7 +41,7 @@ and just use it rather than running.
 Using cluster to get a faster build -- particularly on the initial request.
 
     if cluster.isMaster and not args.cache
-      if ouexistsSync path.join(args.root_directory, 'demo.html')
+      if fs.existsSync path.join(args.root_directory, 'demo.html')
         console.log "Test Page".blue, "http://localhost:#{port}/demo.html"
       cpuCount = require('os').cpus().length * 2
       ct = 0
