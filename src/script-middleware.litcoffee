@@ -6,6 +6,7 @@ Express middleware to build and serve on demand.
     through = require 'through'
     uglify = require 'uglify-js'
     fs = require 'fs'
+    Promise = require 'bluebird'
 
     requireString = (extension) ->
       escapeContent = (content) ->
@@ -30,7 +31,7 @@ Express middleware to build and serve on demand.
           through()
           
     module.exports = (args, directory) ->
-      compile = (filename, next) ->
+      compile = (filename) ->
         console.log "scripting with browserify", filename.blue
         b = browserify
           debug: true unless args.cache
@@ -38,13 +39,18 @@ Express middleware to build and serve on demand.
         b.add filename
         b.transform requireString '.svg'
         b.transform require 'coffeeify'
-        b.bundle (err, compiled) ->
-          return next(err) if err
+        new Promise (resolve, reject) ->
+          b.bundle (err, compiled) ->
+            if err?
+              reject err
+            else
+              resolve compiled
+        .then (compiled) ->
           if args.cache
             compiled = uglify.minify compiled.toString(), fromString: true
             compiled = compiled.code
             args.cache[filename] = compiled
-          next null, compiled
+          compiled
       compile: compile
 
       get: (req, res, next) ->
@@ -59,16 +65,15 @@ Express middleware to build and serve on demand.
               res.send(args.cache[filename]).end()
               return
               
-            compile filename, (err, compiled) ->
-              if err
-                console.error err.toString().red
-                res
-                  .set 'Error', err.toString()
-                  .send err.toString(), 400
-                  .end()
-              else
+            compile filename
+              .then (compiled) ->
                 res.setHeader 'Last-Modified', args.lastModified
                 res.type 'application/javascript'
                 res.send(compiled)
+              .error (err) ->
+                console.error err.toString().red
+                res.set 'Error', err.toString()
+                res.send err.toString(), 400
+                res.end()
           else
             next()

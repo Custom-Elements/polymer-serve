@@ -10,7 +10,7 @@ Express middleware to build and serve on demand.
     Promise.promisifyAll less
 
     module.exports = (args, directory) ->
-      compile = (filename, next) ->
+      compile = (filename) ->
         console.log "styling ", filename.blue
         cssOptions =
           relativeUrls: true
@@ -22,9 +22,8 @@ Express middleware to build and serve on demand.
             process.cwd()
             ]
         fs.readFileAsync(filename, 'utf-8')
-          .then( (rawLess) ->
+          .then (rawLess) ->
             less.renderAsync rawLess, cssOptions
-          )
         .then (compiled) ->
           if args.cache
             args.cache[filename] = compiled
