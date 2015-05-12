@@ -18,12 +18,14 @@ server, which will be transpiled into polymer ready browser custom elements.
     {docopt} = require 'docopt'
     _ = require 'lodash'
     args = docopt(doc)
-    path = require 'path'
-    fs = require 'fs'
+    Path = require 'path'
+    Promise = require 'bluebird'
+    fs = Promise.promisifyAll require 'fs'
     express = require 'express'
     cluster = require 'cluster'
     walk = require 'walk'
     mockRequest = require 'supertest'
+    cheerio = require 'cheerio'
     require 'colors'
 
     args.root_directory = fs.realpathSync args['<root_directory>'] or '.'
@@ -41,7 +43,7 @@ and just use it rather than running.
 Using cluster to get a faster build -- particularly on the initial request.
 
     if cluster.isMaster and not args.cache
-      if fs.existsSync path.join(args.root_directory, 'demo.html')
+      if fs.existsSync Path.join(args.root_directory, 'demo.html')
         console.log "Test Page".blue, "http://localhost:#{port}/demo.html"
       cpuCount = require('os').cpus().length * 2
       ct = 0
@@ -64,15 +66,42 @@ Optional precache step to precompile and populate the cache, before the server b
 
       if args['--precache']
         console.log "enabling precompilation".green
-        walker = walk.walk args.root_directory
+        paths = []
+        walker = walk.walk args.root_directory, { filters: ["polymer"] }
         walker.on 'file', (dir, stats, next) ->
-          file = path.join(dir, stats.name).replace new RegExp("^#{args.root_directory}"), ""
-          if file.match /\.(coffee|litcoffee|less|md)$/
-            mockRequest(app).get(file).end -> next()
+          path = Path.join(dir, stats.name)#.replace new RegExp("^#{args.root_directory}"), ""
+          if Path.extname(path) is '.html'
+            fs.readFileAsync path, "utf8"
+            .then (html) ->
+              $ = cheerio.load html
+              $('link[rel=stylesheet]').map (index, element) ->
+                href = $(this).attr 'href'
+                if Path.extname(href) is '.less'
+                  file = Path.join dir, href
+                  # if file.lastIndexOf 'node_modules' isnt -1
+                  #   file = file.substring file.lastIndexOf 'node_modules'
+                  paths.push file
+              $('script').map (index, element) ->
+                src = $(this).attr 'src'
+                if Path.extname(src) in ['.coffee', '.litcoffee']
+                  file = Path.join dir, src
+                  # if file.lastIndexOf 'node_modules' isnt -1
+                  #   file = file.substring file.lastIndexOf 'node_modules'
+                  paths.push file
+              next()
+              # if file.match /\.(coffee|litcoffee|less|md)$/
+              #   mockRequest(app).get(file).end -> next()
           else
             next()
         walker.on 'end', ->
-            console.log "Precache completed, starting server...".green
-            app.listen port
+            Promise.map _.uniq(paths), (path) ->
+              return new Promise (resolve, reject) ->
+                console.log "Crawling #{path}"
+                url = path.replace new RegExp("^#{args.root_directory}"), ""
+                mockRequest(app).get(url).end -> resolve()
+            , { concurrency: 1 }
+            .then ->
+              console.log "Precache completed, starting server...".green
+              app.listen port
       else
         app.listen port

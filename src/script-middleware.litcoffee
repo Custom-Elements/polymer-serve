@@ -39,7 +39,7 @@ Express middleware to build and serve on demand.
           if args.cache?[filename]
             res.type 'application/javascript'
             res.setHeader 'Last-Modified', args.lastModified
-            res.send args.cache[filename]
+            res.send(args.cache[filename]).end()
             return
           console.log "scripting with browserify", filename.blue
           b = browserify
@@ -62,6 +62,6 @@ Express middleware to build and serve on demand.
                 args.cache[filename] = compiled
                 res.setHeader 'Last-Modified', args.lastModified
               res.type 'application/javascript'
-              res.send compiled
+              res.send(compiled).end()
         else
           next()

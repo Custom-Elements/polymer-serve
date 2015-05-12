@@ -25,8 +25,9 @@
   },
   "homepage": "https://github.com/Custom-Elements/polymer-serve",
   "dependencies": {
-    "bluebird": "^2.5.3",
+    "bluebird": "^2.9.25",
     "browserify": "10.1.2",
+    "cheerio": "^0.19.0",
     "coffee-script": "^1.8.0",
     "coffeeify": "^1.0.0",
     "colors": "~0.6.2",

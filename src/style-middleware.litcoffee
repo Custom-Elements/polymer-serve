@@ -19,7 +19,7 @@ Express middleware to build and serve on demand.
           if args.cache?[filename]
             res.type 'text/css'
             res.setHeader 'Last-Modified', args.lastModified
-            res.send args.cache[filename]
+            res.send(args.cache[filename]).end()
             return
           console.log "styling ", filename.blue
           cssOptions =
@@ -40,7 +40,7 @@ Express middleware to build and serve on demand.
                 args.cache[filename] = compiled.css
                 res.setHeader 'Last-Modified', args.lastModified
               res.type 'text/css'
-              res.send compiled.css
+              res.send(compiled.css).end()
             )
             .error( (e) ->
               res.statusCode = 500
