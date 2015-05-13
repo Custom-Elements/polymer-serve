@@ -18,13 +18,12 @@ server, which will be transpiled into polymer ready browser custom elements.
     {docopt} = require 'docopt'
     _ = require 'lodash'
     args = docopt(doc)
-    Path = require 'path'
     Promise = require 'bluebird'
+    Path = Promise.promisifyAll require 'path'
     fs = Promise.promisifyAll require 'fs'
     express = require 'express'
     cluster = require 'cluster'
     walk = require 'walk'
-    mockRequest = require 'supertest'
     cheerio = require 'cheerio'
     require 'colors'
 
@@ -59,6 +58,10 @@ Using cluster to get a faster build -- particularly on the initial request.
       app.use require('./style-middleware.litcoffee')(args, args.root_directory).get
       app.use require('./script-middleware.litcoffee')(args, args.root_directory).get
       app.use require('./markdown-middleware.litcoffee')(args, args.root_directory).get
+      
+      markdownCompiler = require('./markdown-middleware.litcoffee')(args, args.root_directory).compile
+      scriptCompiler = require('./script-middleware.litcoffee')(args, args.root_directory).compile
+      styleCompiler = require('./style-middleware.litcoffee')(args, args.root_directory).compile
 
       app.use express.static(args.root_directory)
 
@@ -80,6 +83,7 @@ Optional precache step to precompile and populate the cache, before the server b
                   file = Path.join dir, href
                   # if file.lastIndexOf 'node_modules' isnt -1
                   #   file = file.substring file.lastIndexOf 'node_modules'
+                  # if exists
                   paths.push file
               $('script').map (index, element) ->
                 src = $(this).attr 'src'
@@ -95,13 +99,19 @@ Optional precache step to precompile and populate the cache, before the server b
             next()
         walker.on 'end', ->
             Promise.map _.uniq(paths), (path) ->
-              return new Promise (resolve, reject) ->
-                console.log "Crawling #{path}"
-                url = path.replace new RegExp("^#{args.root_directory}"), ""
-                mockRequest(app).get(url).end -> resolve()
+              fs.statAsync path
+                .then (stat) ->
+                  if stat.isFile()
+                    ext = Path.extname path
+                    return scriptCompiler(path) if ext in ['.coffee', '.litcoffee']
+                    return styleCompiler(path) if ext in ['.less']
+                  return path
+                .catch (err) ->
+                  console.log "*** #{path} #{err}"
+                  return path
             , { concurrency: 1 }
             .then ->
-              console.log "Precache completed, starting server...".green
+              console.log "Precalessche completed, starting server...".green
               app.listen port
       else
         app.listen port

@@ -24,10 +24,10 @@ Express middleware to build and serve on demand.
         fs.readFileAsync(filename, 'utf-8')
           .then (rawLess) ->
             less.renderAsync rawLess, cssOptions
-        .then (compiled) ->
-          if args.cache
-            args.cache[filename] = compiled
-          compiled
+          .then (compiled) ->
+            if args.cache
+              args.cache[filename] = compiled.css
+            compiled.css
       compile: compile
 
       get: (req, res, next) ->
@@ -43,9 +43,9 @@ Express middleware to build and serve on demand.
               return
             compile(filename)
               .then (compiled) ->
-                res.setHeader 'Last-Modified', args.lastModified
                 res.type 'text/css'
-                res.send(compiled.css).end()
+                res.setHeader 'Last-Modified', args.lastModified
+                res.send(compiled).end()
               .error (e) ->
                 res.statusCode = 500
                 res.end e.message
