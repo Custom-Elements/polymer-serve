@@ -6,6 +6,7 @@ Express middleware to build and serve on demand.
     through = require 'through'
     uglify = require 'uglify-js'
     fs = require 'fs'
+    Promise = require 'bluebird'
 
     requireString = (extension) ->
       escapeContent = (content) ->
@@ -28,40 +29,51 @@ Express middleware to build and serve on demand.
           through write, end
         else
           through()
-
+          
     module.exports = (args, directory) ->
-      (req, res, next) ->
-        if 'GET' isnt req.method and 'HEAD' isnt req.method
-          return next()
-        filename = path.join directory or process.cwd(), parseurl(req).pathname
-
-        if path.extname(filename) is '.litcoffee' or path.extname(filename) is '.coffee'
-          if args.cache?[filename]
-            res.type 'application/javascript'
-            res.setHeader 'Last-Modified', args.lastModified
-            res.send args.cache[filename]
-            return
-          console.log "scripting with browserify", filename.blue
-          b = browserify
-            debug: true unless args.cache
-            fullPaths: true
-          b.add filename
-          b.transform requireString '.svg'
-          b.transform require 'coffeeify'
+      compile = (filename) ->
+        console.log "scripting with browserify", filename.blue
+        b = browserify
+          debug: true unless args.cache
+          fullPaths: true
+        b.add filename
+        b.transform requireString '.svg'
+        b.transform require 'coffeeify'
+        new Promise (resolve, reject) ->
           b.bundle (err, compiled) ->
-            if err
-              console.error err.toString().red
-              res
-                .set 'Error', err.toString()
-                .send err.toString(), 400
-                .end()
+            if err?
+              reject err
             else
-              if args.cache
-                compiled = uglify.minify compiled.toString(), fromString: true
-                compiled = compiled.code
-                args.cache[filename] = compiled
-                res.setHeader 'Last-Modified', args.lastModified
+              resolve compiled
+        .then (compiled) ->
+          if args.cache
+            compiled = uglify.minify compiled.toString(), fromString: true
+            compiled = compiled.code
+            args.cache[filename] = compiled
+          compiled
+      compile: compile
+
+      get: (req, res, next) ->
+          if 'GET' isnt req.method and 'HEAD' isnt req.method
+            return next()
+          filename = path.join directory or process.cwd(), parseurl(req).pathname
+
+          if path.extname(filename) is '.litcoffee' or path.extname(filename) is '.coffee'
+            if args.cache?[filename]
               res.type 'application/javascript'
-              res.send compiled
-        else
-          next()
+              res.setHeader 'Last-Modified', args.lastModified
+              res.send(args.cache[filename]).end()
+              return
+              
+            compile filename
+              .then (compiled) ->
+                res.setHeader 'Last-Modified', args.lastModified
+                res.type 'application/javascript'
+                res.send(compiled)
+              .error (err) ->
+                console.error err.toString().red
+                res.set 'Error', err.toString()
+                res.send err.toString(), 400
+                res.end()
+          else
+            next()

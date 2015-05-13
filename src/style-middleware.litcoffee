@@ -10,41 +10,44 @@ Express middleware to build and serve on demand.
     Promise.promisifyAll less
 
     module.exports = (args, directory) ->
-      (req, res, next) ->
-        if 'GET' isnt req.method and 'HEAD' isnt req.method
-          return next()
-        filename = path.join directory or process.cwd(), parseurl(req).pathname
+      compile = (filename) ->
+        console.log "styling ", filename.blue
+        cssOptions =
+          relativeUrls: true
+          compress: true
+          filename: filename
+          paths: [
+            path.dirname(filename)
+            directory
+            process.cwd()
+            ]
+        fs.readFileAsync(filename, 'utf-8')
+          .then (rawLess) ->
+            less.renderAsync rawLess, cssOptions
+          .then (compiled) ->
+            if args.cache
+              args.cache[filename] = compiled.css
+            compiled.css
+      compile: compile
 
-        if path.extname(filename) is '.less'
-          if args.cache?[filename]
-            res.type 'text/css'
-            res.setHeader 'Last-Modified', args.lastModified
-            res.send args.cache[filename]
-            return
-          console.log "styling ", filename.blue
-          cssOptions =
-            relativeUrls: true
-            compress: true
-            filename: filename
-            paths: [
-              path.dirname(filename)
-              directory
-              process.cwd()
-              ]
-          fs.readFileAsync(filename, 'utf-8')
-            .then( (rawLess) ->
-              less.renderAsync rawLess, cssOptions
-            )
-            .then( (compiled) ->
-              if args.cache
-                args.cache[filename] = compiled.css
-                res.setHeader 'Last-Modified', args.lastModified
+      get: (req, res, next) ->
+          if 'GET' isnt req.method and 'HEAD' isnt req.method
+            return next()
+          filename = path.join directory or process.cwd(), parseurl(req).pathname
+
+          if path.extname(filename) is '.less'
+            if args.cache?[filename]
               res.type 'text/css'
-              res.send compiled.css
-            )
-            .error( (e) ->
-              res.statusCode = 500
-              res.end e.message
-            )
-        else
-          next()
+              res.setHeader 'Last-Modified', args.lastModified
+              res.send(args.cache[filename]).end()
+              return
+            compile(filename)
+              .then (compiled) ->
+                res.type 'text/css'
+                res.setHeader 'Last-Modified', args.lastModified
+                res.send(compiled).end()
+              .error (e) ->
+                res.statusCode = 500
+                res.end e.message
+          else
+            next()

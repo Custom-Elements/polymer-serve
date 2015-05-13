@@ -25,19 +25,21 @@
   },
   "homepage": "https://github.com/Custom-Elements/polymer-serve",
   "dependencies": {
-    "bluebird": "^2.5.3",
+    "bluebird": "^2.9.25",
     "browserify": "10.1.2",
+    "cheerio": "^0.19.0",
     "coffee-script": "^1.8.0",
     "coffeeify": "^1.0.0",
     "colors": "~0.6.2",
+    "cors": "^2.5.2",
     "docopt": "~0.4.0",
     "express": "~4.4.1",
     "less": "2.2.0",
     "lodash": "^2.4.1",
     "marked": "^0.3.2",
+    "node-dir": "^0.1.8",
     "parseurl": "^1.0.1",
     "through": "^2.3.6",
-    "uglify-js": "^2.3.6",
-    "cors": "^2.5.2"
+    "uglify-js": "^2.3.6"
   }
 }

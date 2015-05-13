@@ -16,31 +16,36 @@ Express middleware to build and serve on demand.
       "<li dotted>#{text}</li>"
 
     module.exports = (args, directory) ->
-      (req, res, next) ->
-        if 'GET' isnt req.method and 'HEAD' isnt req.method
-          return next()
-        filename = path.join directory or process.cwd(), parseurl(req).pathname
+      compile = (filename) ->
+        console.log "marking down", filename.blue
+        fs.readFileAsync(filename, 'utf-8')
+          .then (markdown) ->
+            content = marked markdown, renderer: renderer
+            if args.cache
+              args.cache[filename] = content
+            content
+      
+      compile: compile
 
-        if args.cache?[filename]
-          res.type 'text/html'
-          res.setHeader 'Last-Modified', args.lastModified
-          res.send args.cache[filename]
-          return
+      get: (req, res, next) ->
+          if 'GET' isnt req.method and 'HEAD' isnt req.method
+            return next()
+          filename = path.join directory or process.cwd(), parseurl(req).pathname
 
-        if path.extname(filename) is '.md'
-          console.log "marking down", filename.blue
-          fs.readFileAsync(filename, 'utf-8')
-            .then( (markdown) ->
-              content = marked markdown, renderer: renderer
-              if args.cache
-                args.cache[filename] = content
+          if args.cache?[filename]
+            res.type 'text/html'
+            res.setHeader 'Last-Modified', args.lastModified
+            res.send args.cache[filename]
+            return
+
+          if path.extname(filename) is '.md'
+            compile filename
+              .then (content) ->
                 res.setHeader 'Last-Modified', args.lastModified
-              res.type 'text/html'
-              res.send content
-            )
-            .error( (e) ->
-              res.statusCode = 500
-              res.end e.message
-            )
-        else
-          next()
+                res.type 'text/html'
+                res.send(content).end()
+              .error (e) ->
+                res.statusCode = 500
+                res.end e.message
+          else
+            next()
