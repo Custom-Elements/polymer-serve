@@ -31,7 +31,6 @@
     "coffee-script": "^1.8.0",
     "coffeeify": "^1.0.0",
     "colors": "~0.6.2",
-    "cors": "^2.5.2",
     "docopt": "~0.4.0",
     "express": "~4.4.1",
     "less": "2.2.0",
