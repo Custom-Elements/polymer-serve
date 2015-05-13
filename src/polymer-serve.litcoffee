@@ -23,7 +23,7 @@ server, which will be transpiled into polymer ready browser custom elements.
     fs = Promise.promisifyAll require 'fs'
     express = require 'express'
     cluster = require 'cluster'
-    walk = require 'walk'
+    dir = require 'node-dir'
     cheerio = require 'cheerio'
     require 'colors'
 
@@ -59,59 +59,67 @@ Using cluster to get a faster build -- particularly on the initial request.
       app.use require('./script-middleware.litcoffee')(args, args.root_directory).get
       app.use require('./markdown-middleware.litcoffee')(args, args.root_directory).get
       
-      markdownCompiler = require('./markdown-middleware.litcoffee')(args, args.root_directory).compile
-      scriptCompiler = require('./script-middleware.litcoffee')(args, args.root_directory).compile
-      styleCompiler = require('./style-middleware.litcoffee')(args, args.root_directory).compile
+      compileMarkdownAsync = require('./markdown-middleware.litcoffee')(args, args.root_directory).compile
+      compileScriptAsync = require('./script-middleware.litcoffee')(args, args.root_directory).compile
+      compileStyleAsync = require('./style-middleware.litcoffee')(args, args.root_directory).compile
 
       app.use express.static(args.root_directory)
 
 Optional precache step to precompile and populate the cache, before the server becomes available
 
-      if args['--precache']
-        console.log "enabling precompilation".green
-        paths = []
-        walker = walk.walk args.root_directory, { filters: ["polymer"] }
-        walker.on 'file', (dir, stats, next) ->
-          path = Path.join(dir, stats.name)#.replace new RegExp("^#{args.root_directory}"), ""
-          if Path.extname(path) is '.html'
-            fs.readFileAsync path, "utf8"
-            .then (html) ->
-              $ = cheerio.load html
-              $('link[rel=stylesheet]').map (index, element) ->
-                href = $(this).attr 'href'
-                if Path.extname(href) is '.less'
-                  file = Path.join dir, href
-                  # if file.lastIndexOf 'node_modules' isnt -1
-                  #   file = file.substring file.lastIndexOf 'node_modules'
-                  # if exists
-                  paths.push file
-              $('script').map (index, element) ->
-                src = $(this).attr 'src'
-                if Path.extname(src) in ['.coffee', '.litcoffee']
-                  file = Path.join dir, src
-                  # if file.lastIndexOf 'node_modules' isnt -1
-                  #   file = file.substring file.lastIndexOf 'node_modules'
-                  paths.push file
-              next()
-              # if file.match /\.(coffee|litcoffee|less|md)$/
-              #   mockRequest(app).get(file).end -> next()
-          else
-            next()
-        walker.on 'end', ->
-            Promise.map _.uniq(paths), (path) ->
-              fs.statAsync path
-                .then (stat) ->
-                  if stat.isFile()
-                    ext = Path.extname path
-                    return scriptCompiler(path) if ext in ['.coffee', '.litcoffee']
-                    return styleCompiler(path) if ext in ['.less']
-                  return path
-                .catch (err) ->
-                  console.log "*** #{path} #{err}"
-                  return path
-            , { concurrency: 1 }
-            .then ->
-              console.log "Precalessche completed, starting server...".green
-              app.listen port
-      else
+      if not args['--precache']
         app.listen port
+      else
+        console.log "beginning precompilation...".green
+        
+        onReadFile = (err, html, filename, next) ->
+          throw err if err
+          parseHTML(filename, html).then -> next()
+        
+        options =
+          match: /.html$/
+          excludeDir: [ 'polymer', 'polymer-serve' ]
+
+        dir.readFiles args.root_directory, options, onReadFile, (err, files) ->
+          throw err if err?
+          console.log "Precache completed, starting server...".green
+          app.listen port
+
+Parse the the html, pulling out all references that might need to be compiled
+
+        parseHTML = (filename, html) ->
+          # console.log "Parsing #{filename}"
+          $ = cheerio.load html
+          dir = Path.dirname filename
+        
+          paths = []
+          $('link[rel=stylesheet]').map (index, element) ->
+            href = $(this).attr('href')
+            paths.push Path.join dir, href if href? and Path.extname(href) is '.less'
+          
+          $('script').map (index, element) ->
+            src = $(this).attr('src')
+            paths.push Path.join dir, src if src? and Path.extname(src) in [ '.coffee', '.litcoffee']
+
+          # todo - compile markdown files to html, then parse the html, probably not worth the trouble
+          
+          return compile _.filter paths, (path) ->
+            ignoredDirectories = _.intersection options.excludeDir, path.split '/'
+            ignoredDirectories.length is 0
+
+Compile the paths, which caches the result as a side effect
+          
+        compile = (paths) ->
+          Promise.map paths, (path) ->
+            if args.cache[path]
+              return console.log "Skipping duplicate import '#{path}'".yellow
+            fs.statAsync path
+              .then (stat) ->
+                if stat.isFile()
+                  ext = Path.extname path
+                  if ext is '.less'
+                    compileStyleAsync(path)
+                  else if ext in ['.coffee', '.litcoffee']
+                    compileScriptAsync(path)
+              .catch (err) ->
+                console.log "File not found: '#{path}'".red

@@ -37,9 +37,9 @@
     "less": "2.2.0",
     "lodash": "^2.4.1",
     "marked": "^0.3.2",
+    "node-dir": "^0.1.8",
     "parseurl": "^1.0.1",
     "through": "^2.3.6",
-    "uglify-js": "^2.3.6",
-    "walk": "^2.3.9"
+    "uglify-js": "^2.3.6"
   }
 }
