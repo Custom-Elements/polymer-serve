@@ -31,17 +31,16 @@ Express middleware to build and serve on demand.
           if 'GET' isnt req.method and 'HEAD' isnt req.method
             return next()
           filename = path.join directory or process.cwd(), parseurl(req).pathname
+          res.setHeader 'Last-Modified', args.lastModified ? new Date().toUTCString()
 
           if args.cache?[filename]
             res.type 'text/html'
-            res.setHeader 'Last-Modified', args.lastModified
             res.send args.cache[filename]
             return
 
           if path.extname(filename) is '.md'
             compile filename
               .then (content) ->
-                res.setHeader 'Last-Modified', args.lastModified
                 res.type 'text/html'
                 res.send(content).end()
               .error (e) ->
