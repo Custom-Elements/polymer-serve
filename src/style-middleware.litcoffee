@@ -34,17 +34,16 @@ Express middleware to build and serve on demand.
           if 'GET' isnt req.method and 'HEAD' isnt req.method
             return next()
           filename = path.join directory or process.cwd(), parseurl(req).pathname
+          res.setHeader 'Last-Modified', args.lastModified ? new Date().toUTCString()
 
           if path.extname(filename) is '.less'
             if args.cache?[filename]
               res.type 'text/css'
-              res.setHeader 'Last-Modified', args.lastModified
               res.send(args.cache[filename]).end()
               return
             compile(filename)
               .then (compiled) ->
                 res.type 'text/css'
-                res.setHeader 'Last-Modified', args.lastModified
                 res.send(compiled).end()
               .error (e) ->
                 res.statusCode = 500
