@@ -24,7 +24,7 @@ Express middleware to build and serve on demand.
             if args.cache
               args.cache[filename] = content
             content
-      
+
       compile: compile
 
       get: (req, res, next) ->

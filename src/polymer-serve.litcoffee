@@ -57,12 +57,14 @@ Using cluster to get a faster build -- particularly on the initial request.
       app.use require('./style-middleware.litcoffee')(args, args.root_directory).get
       app.use require('./script-middleware.litcoffee')(args, args.root_directory).get
       app.use require('./markdown-middleware.litcoffee')(args, args.root_directory).get
-      
+
       compileMarkdownAsync = require('./markdown-middleware.litcoffee')(args, args.root_directory).compile
       compileScriptAsync = require('./script-middleware.litcoffee')(args, args.root_directory).compile
       compileStyleAsync = require('./style-middleware.litcoffee')(args, args.root_directory).compile
 
       app.use express.static(args.root_directory)
+
+      app.get '/', require('./documentation-middleware.litcoffee')(args, args.root_directory)
 
 Optional precache step to precompile and populate the cache, before the server becomes available
 
@@ -70,11 +72,11 @@ Optional precache step to precompile and populate the cache, before the server b
         app.listen port
       else
         console.log "beginning precompilation...".green
-        
+
         onReadFile = (err, html, filename, next) ->
           throw err if err
           parseHTML(filename, html).then -> next()
-        
+
         options =
           match: /.html$/
           excludeDir: [ 'polymer', 'polymer-serve' ]
@@ -90,24 +92,24 @@ Parse the the html, pulling out all references that might need to be compiled
           # console.log "Parsing #{filename}"
           $ = cheerio.load html
           dir = Path.dirname filename
-        
+
           paths = []
           $('link[rel=stylesheet]').map (index, element) ->
             href = $(this).attr('href')
             paths.push Path.join dir, href if href? and Path.extname(href) is '.less'
-          
+
           $('script').map (index, element) ->
             src = $(this).attr('src')
             paths.push Path.join dir, src if src? and Path.extname(src) in [ '.coffee', '.litcoffee']
 
           # todo - compile markdown files to html, then parse the html, probably not worth the trouble
-          
+
           return compile _.filter paths, (path) ->
             ignoredDirectories = _.intersection options.excludeDir, path.split '/'
             ignoredDirectories.length is 0
 
 Compile the paths, which caches the result as a side effect
-          
+
         compile = (paths) ->
           Promise.map paths, (path) ->
             if args.cache[path]
