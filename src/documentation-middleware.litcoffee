@@ -12,6 +12,7 @@ Things to make docs
         './elements/**/*.html'
         '!./elements/**/demo/*.html'
         '!./elements/index.html'
+        '!./elements/**/preview.html'
       ]
 
       docTemplateSrc = path.join(__dirname,'../templates/docs.mustache')
