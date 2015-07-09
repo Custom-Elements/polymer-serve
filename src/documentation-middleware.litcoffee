@@ -14,7 +14,7 @@ Things to make docs
         '!./elements/index.html'
       ]
 
-      docTemplateSrc = path.join(directory, './templates/docs.mustache')
+      docTemplateSrc = path.join(__dirname,'../templates/docs.mustache')
 
       (req,res) ->
         globby src, { cwd: directory } , (err,paths) ->
@@ -22,7 +22,7 @@ Things to make docs
             link = { element: path.basename(link).replace('.html','') }
             link.url = "./elements/#{link.element}/#{link.element}.html"
             link
-
           fs.readFile docTemplateSrc, {encoding: 'utf8'} , (err, file) ->
             res.type 'text/html'
+            console.err(err) if err
             res.end(mustache.render(file, { links }))
