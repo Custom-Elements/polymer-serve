@@ -10,7 +10,7 @@ core team elements.
         if 'GET' isnt req.method and 'HEAD' isnt req.method
           return next()
         filename = path.join directory or process.cwd(), parseurl(req).pathname
-        if filename.indexOf('bower_components/polymer/polymer.html') > 0
+        if filename.indexOf('bower_components/polymer/polymer.html') > 0 and not args['--polymer']
           res.type 'text/html'
           res.statusCode = 200
           res.end ''
