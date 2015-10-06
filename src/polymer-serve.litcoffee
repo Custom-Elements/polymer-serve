@@ -13,6 +13,7 @@ server, which will be transpiled into polymer ready browser custom elements.
       --help             Show the help
       --cache            Only build just once, then save the results.
       --precache         Precompile and cache all resources before starting, implies --cache
+      --polymer          Allow import of polymer libraries
       --quiet            SSSHHH! Less logging.
     """
     {docopt} = require 'docopt'

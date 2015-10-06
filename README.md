@@ -7,4 +7,5 @@ Usage:
   --cache            Only build just once, then save the results.
   --precache         Precompile and cache all resources before starting, implies --cache
   --quiet            SSSHHH! Less logging.
+  --polymer          Allow import of polymer libraries
 ```
